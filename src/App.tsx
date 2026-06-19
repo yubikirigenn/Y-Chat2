@@ -1409,7 +1409,7 @@ function App() {
           <div className="modal__backdrop" onClick={rejectCall} />
           <section className="modal__dialog" style={{ maxWidth: '320px', padding: '30px', textAlign: 'center' }}>
             <div style={{ marginBottom: '20px' }}>
-              <Avatar profile={profilesById.get(incomingCall.callerId) || { id: '', name: '不明', handle: '', avatarSeed: 'x', status: '' }} size={80} />
+              <Avatar profile={profilesById.get(incomingCall.callerId) || { id: '', name: '不明', handle: '', avatarSeed: 'x', status: '', accent: '#ccc' }} size={80} />
             </div>
             <strong style={{ fontSize: '1.2rem', display: 'block', marginBottom: '8px' }}>
               {profilesById.get(incomingCall.callerId)?.name || '不明'}からの着信
@@ -1417,7 +1417,7 @@ function App() {
             <p style={{ color: 'var(--muted)', marginBottom: '30px' }}>音声通話</p>
             <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
               <button type="button" className="call-screen__hangup" onClick={rejectCall} style={{ width: 64, height: 64 }}>
-                <CallIcon className="icon" style={{ transform: 'rotate(135deg)' }} />
+                <CallIcon className="icon" />
               </button>
               <button type="button" className="call-screen__hangup" onClick={acceptCall} style={{ width: 64, height: 64, background: 'var(--accent)', boxShadow: '0 10px 30px rgba(0, 195, 0, 0.4)' }}>
                 <CallIcon className="icon" />
@@ -1486,7 +1486,7 @@ function App() {
               // ローカルのaccountsリストにも追加しておく（これがないとmyFriendsに反映されない）
               setAccounts((prev) => {
                 if (prev.some(a => a.id === friend.id)) return prev
-                return [...prev, { id: friend.id, password: '', name: friend.name, handle: friend.handle, profile: friend }]
+                return [...prev, { id: friend.id, password: '', passwordHash: '', name: friend.name, handle: friend.handle, profile: friend }]
               })
 
               const newFriendships = [

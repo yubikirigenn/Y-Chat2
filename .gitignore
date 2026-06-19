@@ -1,8 +1,1 @@
-node_modules/
-dist/
-*.tsbuildinfo
-.env.local
-.env
-test_*.js
-*.png
-*.webp
+Nothing should be ignored based on the provided changes. The modification of `tsconfig.json` is a source configuration file and does not require any new ignore rules.
