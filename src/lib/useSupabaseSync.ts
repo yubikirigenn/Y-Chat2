@@ -153,8 +153,21 @@ export function useSupabaseSync(
         
         setData(prev => {
           if (prev.messages.some(m => m.id === newMsg.id)) return prev
+
+          const isFromMe = newMsg.sender_id?.toLowerCase() === currentUserId?.toLowerCase()
+          const isCurrentRoom = prev.selectedRoomId === newMsg.room_id
+
+          const newRooms = prev.rooms.map(r => {
+            if (r.id !== newMsg.room_id) return r
+            return {
+              ...r,
+              unread: (!isFromMe && !isCurrentRoom) ? r.unread + 1 : r.unread
+            }
+          })
+
           return {
             ...prev,
+            rooms: newRooms,
             messages: [...prev.messages, {
               id: newMsg.id,
               roomId: newMsg.room_id,

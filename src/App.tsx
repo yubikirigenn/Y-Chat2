@@ -442,7 +442,7 @@ function App() {
 
     // 自分が送信者でなく、まだ既読にしていないメッセージがあるか判定
     const hasUnread = data.messages.some(
-      (m) => m.roomId === selectedRoom.id && m.senderId !== data.me!.id && !m.readBy.map(id => id.toLowerCase()).includes(data.me!.id.toLowerCase())
+      (m) => m.roomId === selectedRoom.id && m.senderId?.toLowerCase() !== data.me!.id.toLowerCase() && !m.readBy.map(id => id.toLowerCase()).includes(data.me!.id.toLowerCase())
     )
     const room = data.rooms.find(r => r.id === selectedRoom.id)
     const hasUnreadCount = room ? room.unread > 0 : false
@@ -458,7 +458,7 @@ function App() {
 
       const messages = prev.messages.map((message) => {
         if (message.roomId !== selectedRoom.id) return message
-        if (message.senderId === prev.me!.id) return message
+        if (message.senderId?.toLowerCase() === prev.me!.id.toLowerCase()) return message
         if (message.readBy.map(id => id.toLowerCase()).includes(prev.me!.id.toLowerCase())) return message
 
         return {

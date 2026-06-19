@@ -198,14 +198,26 @@ export const api = {
     await supabase.from('room_members').update({ unread_count: 0 }).eq('room_id', roomId).eq('user_id', userId)
     
     // 対象ルームの他人のメッセージのread_byに自分を追加
-    // 注: 本格的な実装ではRPCを利用しますが、今回は簡易的に全メッセージを取得して更新します
-    const { data } = await supabase.from('messages').select('id, read_by').eq('room_id', roomId)
+    const { data } = await supabase.from('messages').select('id, read_by, sender_id').eq('room_id', roomId)
     if (!data) return
     
-    const unreadMsgs = data.filter(m => !(m.read_by || []).includes(userId))
-    for (const msg of unreadMsgs) {
-      await supabase.from('messages').update({ read_by: [...(msg.read_by || []), userId] }).eq('id', msg.id)
-    }
+    // 自分が送信者ではない、かつまだ read_by に自分が含まれていない（大文字小文字無視）メッセージを抽出
+    const unreadMsgs = data.filter(m => {
+      if (m.sender_id?.toLowerCase() === userId.toLowerCase()) return false
+      const readList = (m.read_by || []).map((id: string) => id.toLowerCase())
+      return !readList.includes(userId.toLowerCase())
+    })
+
+    if (unreadMsgs.length === 0) return
+
+    // 並列でアップデートを実行
+    await Promise.all(
+      unreadMsgs.map(msg => {
+        // 重複を防ぐため Set を使う
+        const newReadBy = Array.from(new Set([...(msg.read_by || []), userId]))
+        return supabase.from('messages').update({ read_by: newReadBy }).eq('id', msg.id)
+      })
+    )
   },
 
   async updateProfile(userId: string, name: string, status: string, avatarUrl?: string) {
