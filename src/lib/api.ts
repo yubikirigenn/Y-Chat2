@@ -28,8 +28,8 @@ export const api = {
     if (!supabase) throw new Error('Supabase is not configured')
     const seed = handle.replace('@', '')
     
-    // Check if exists
-    const { data: existing } = await supabase.from('accounts').select('id').eq('id', handle).maybeSingle()
+    // Check if exists (case-insensitive to prevent PK conflicts if DB is case-insensitive, or just to prevent confusing duplicates)
+    const { data: existing } = await supabase.from('accounts').select('id').ilike('id', handle).maybeSingle()
     if (existing) throw new Error('このユーザーIDはすでに使用されています。')
 
     const { data, error } = await supabase.from('accounts').insert([{
@@ -148,11 +148,11 @@ export const api = {
     if (!target) throw new Error('ユーザーが見つかりません')
     if (target.id === userId) throw new Error('自分自身は追加できません')
 
-    // Friendship 追加（双方向）
-    await supabase.from('friendships').insert([
+    // Friendship 追加（双方向、すでに存在する場合は無視）
+    await supabase.from('friendships').upsert([
       { user_id: userId, friend_id: target.id },
       { user_id: target.id, friend_id: userId }
-    ])
+    ], { onConflict: 'user_id,friend_id' })
     
     return {
       id: target.id, name: target.name, handle: target.id, avatarSeed: target.avatar_seed, status: target.status || '', avatarUrl: target.avatar_url, accent: '#00c300'
