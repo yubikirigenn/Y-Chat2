@@ -44,12 +44,12 @@ export function useSupabaseSync(
         })))
         
         setData(prev => {
-          const newRooms = initial.rooms.length > 0 ? initial.rooms : prev.rooms
-          const newMessages = initial.messages.length > 0 ? initial.messages : prev.messages
+          // Supabaseのデータをマスターとし、ローカルのキャッシュ（prev）を上書きする
+          // これにより、Supabase側で削除されたデータがローカルに残る問題（ゴースト）を防ぐ
           return {
             ...prev,
-            rooms: newRooms,
-            messages: newMessages,
+            rooms: initial.rooms,
+            messages: initial.messages,
             friends: initial.friends
           }
         })

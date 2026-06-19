@@ -1070,7 +1070,6 @@ function App() {
                     <strong>{friend.name}</strong>
                     <span>{friend.handle}</span>
                   </div>
-                  <p>{friend.status}</p>
                 </div>
               </button>
             ))}
@@ -1124,15 +1123,6 @@ function App() {
                   className="field__input"
                   value={profileName}
                   onChange={(event) => setProfileName(event.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span className="field__label">ステータスメッセージ</span>
-                <textarea
-                  className="field__input field__input--textarea"
-                  value={profileStatus}
-                  onChange={(event) => setProfileStatus(event.target.value)}
-                  rows={3}
                 />
               </label>
               <button 
@@ -1592,7 +1582,6 @@ function RoomDrawer({
               <Avatar profile={member} size={40} />
               <div>
                 <strong>{member.name}</strong>
-                <p>{member.status}</p>
               </div>
             </div>
           ))}
