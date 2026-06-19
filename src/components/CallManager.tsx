@@ -17,6 +17,7 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
   
   const [activeCallRoom, setActiveCallRoom] = useState<string | null>(null)
   const [callStartTime, setCallStartTime] = useState<number | null>(null)
+  const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([])
 
   // Avoid dependency array infinite loops by using refs for callbacks and activeCallRoom
   const activeCallRoomRef = useRef<string | null>(null)
@@ -71,18 +72,43 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
 
       if (msg.type === 'webrtc-offer') {
         await startWebRTC(msg.roomId, false)
-        await pcRef.current?.setRemoteDescription(new RTCSessionDescription(msg.sdp))
-        const answer = await pcRef.current?.createAnswer()
-        await pcRef.current?.setLocalDescription(answer)
-        sendSignal({ type: 'webrtc-answer', senderId: myId, roomId: msg.roomId, sdp: answer! })
+        const pc = pcRef.current
+        if (pc) {
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
+            await processPendingCandidates()
+            const answer = await pc.createAnswer()
+            await pc.setLocalDescription(answer)
+            sendSignal({ type: 'webrtc-answer', senderId: myId, roomId: msg.roomId, sdp: answer! })
+          } catch (err) {
+            console.error('Error handling webrtc-offer:', err)
+          }
+        }
       }
 
       if (msg.type === 'webrtc-answer') {
-        await pcRef.current?.setRemoteDescription(new RTCSessionDescription(msg.sdp))
+        const pc = pcRef.current
+        if (pc) {
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
+            await processPendingCandidates()
+          } catch (err) {
+            console.error('Error handling webrtc-answer:', err)
+          }
+        }
       }
 
       if (msg.type === 'webrtc-ice') {
-        await pcRef.current?.addIceCandidate(new RTCIceCandidate(msg.candidate))
+        const pc = pcRef.current
+        if (pc && pc.remoteDescription) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(msg.candidate))
+          } catch (err) {
+            console.error('Failed to add ICE candidate directly:', err)
+          }
+        } else {
+          pendingCandidatesRef.current.push(msg.candidate)
+        }
       }
     })
 
@@ -91,6 +117,20 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
       endCall(activeCallRoomRef.current || '')
     }
   }, [myId])
+
+  const processPendingCandidates = async () => {
+    const pc = pcRef.current
+    if (!pc || !pc.remoteDescription) return
+    const candidates = pendingCandidatesRef.current
+    pendingCandidatesRef.current = []
+    for (const cand of candidates) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(cand))
+      } catch (err) {
+        console.error('Failed to add pending ICE candidate:', err)
+      }
+    }
+  }
 
   const startWebRTC = async (roomId: string, isCaller: boolean) => {
     try {
@@ -105,8 +145,17 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
       stream.getTracks().forEach(track => pc.addTrack(track, stream))
 
       pc.ontrack = (event) => {
-        if (remoteAudioRef.current && event.streams[0]) {
-          remoteAudioRef.current.srcObject = event.streams[0]
+        if (remoteAudioRef.current) {
+          if (event.streams && event.streams[0]) {
+            remoteAudioRef.current.srcObject = event.streams[0]
+          } else {
+            let stream = remoteAudioRef.current.srcObject as MediaStream | null
+            if (!stream || !(stream instanceof MediaStream)) {
+              stream = new MediaStream()
+              remoteAudioRef.current.srcObject = stream
+            }
+            stream.addTrack(event.track)
+          }
           remoteAudioRef.current.play().catch(err => {
             console.warn('Audio play failed or blocked by autoplay policy:', err)
           })
@@ -135,6 +184,7 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
     pcRef.current = null
     setActiveCallRoom(null)
     setCallStartTime(null)
+    pendingCandidatesRef.current = []
   }
 
   // Public methods that App.tsx can trigger via a ref or by changing state, but 
