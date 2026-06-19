@@ -456,22 +456,28 @@ function App() {
     setData((prev) => {
       if (!prev.me) return prev
 
+      let messagesChanged = false
       const messages = prev.messages.map((message) => {
         if (message.roomId !== selectedRoom.id) return message
         if (message.senderId?.toLowerCase() === prev.me!.id.toLowerCase()) return message
         if (message.readBy.map(id => id.toLowerCase()).includes(prev.me!.id.toLowerCase())) return message
 
+        messagesChanged = true
         return {
           ...message,
           readBy: [...message.readBy, prev.me!.id],
         }
       })
 
+      let roomsChanged = false
       const rooms = prev.rooms.map((room) => {
         if (room.id !== selectedRoom.id) return room
         if (room.unread === 0) return room
+        roomsChanged = true
         return { ...room, unread: 0 }
       })
+
+      if (!messagesChanged && !roomsChanged) return prev
 
       return { ...prev, messages, rooms }
     })
@@ -1673,7 +1679,6 @@ function NewChatModal({
                     <strong>{friend.name}</strong>
                     <span>{friend.handle}</span>
                   </div>
-                  <p>{friend.status}</p>
                 </div>
               </button>
             ))}
@@ -1704,7 +1709,6 @@ function NewChatModal({
                       <strong>{friend.name}</strong>
                       <span>{friend.handle}</span>
                     </div>
-                    <p>{friend.status}</p>
                   </div>
                 </label>
               ))}
