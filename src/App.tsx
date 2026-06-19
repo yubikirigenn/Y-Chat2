@@ -158,16 +158,16 @@ function RoomAvatar({
   meId: string
 }) {
   if (!room.isGroup) {
-    const other = members.find((member) => member.id !== meId)
+    const other = members.find((member) => member.id.toLowerCase() !== meId.toLowerCase())
     if (!other) {
-      const otherId = room.memberIds.find(id => id !== meId) || 'User'
+      const otherId = room.memberIds.find(id => id.toLowerCase() !== meId.toLowerCase()) || 'User'
       const initialChar = otherId.replace('@', '').charAt(0).toUpperCase()
       return <div className="avatar avatar--empty" style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{initialChar}</div>
     }
     return <Avatar profile={other} size={44} />
   }
 
-  const swatches = members.filter((member) => member.id !== meId).slice(0, 4)
+  const swatches = members.filter((member) => member.id.toLowerCase() !== meId.toLowerCase()).slice(0, 4)
 
   return (
     <div className="avatar avatar--group" aria-hidden="true">
@@ -232,6 +232,21 @@ function App() {
   const compact = useMediaQuery('(max-width: 920px)')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const sendTimerRef = useRef<number | null>(null)
+
+  const [isDocumentVisible, setIsDocumentVisible] = useState(() =>
+    typeof document !== 'undefined' ? document.visibilityState === 'visible' : true
+  )
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const handleVisibilityChange = () => {
+      setIsDocumentVisible(document.visibilityState === 'visible')
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
 
   const [data, setData] = useState<AppData>(() => loadState())
   const [accounts, setAccounts] = useState<Account[]>(() => loadAccounts())
@@ -416,9 +431,16 @@ function App() {
   useEffect(() => {
     if (!selectedRoom || !data.me) return
 
+    // 実際にチャット画面を開いて見ているかチェック
+    const isTabActive = data.selectedTab === 'chats'
+    const isPanelActive = !compact || mobilePanel === 'chat'
+    const isDocVisible = isDocumentVisible
+
+    if (!isTabActive || !isPanelActive || !isDocVisible) return
+
     // 自分が送信者でなく、まだ既読にしていないメッセージがあるか判定
     const hasUnread = data.messages.some(
-      (m) => m.roomId === selectedRoom.id && m.senderId !== data.me!.id && !m.readBy.includes(data.me!.id)
+      (m) => m.roomId === selectedRoom.id && m.senderId !== data.me!.id && !m.readBy.map(id => id.toLowerCase()).includes(data.me!.id.toLowerCase())
     )
     const room = data.rooms.find(r => r.id === selectedRoom.id)
     const hasUnreadCount = room ? room.unread > 0 : false
@@ -435,7 +457,7 @@ function App() {
       const messages = prev.messages.map((message) => {
         if (message.roomId !== selectedRoom.id) return message
         if (message.senderId === prev.me!.id) return message
-        if (message.readBy.includes(prev.me!.id)) return message
+        if (message.readBy.map(id => id.toLowerCase()).includes(prev.me!.id.toLowerCase())) return message
 
         return {
           ...message,
@@ -451,7 +473,16 @@ function App() {
 
       return { ...prev, messages, rooms }
     })
-  }, [selectedRoom?.id, data.messages, data.rooms, data.me?.id])
+  }, [
+    selectedRoom?.id,
+    data.messages,
+    data.rooms,
+    data.me?.id,
+    data.selectedTab,
+    compact,
+    mobilePanel,
+    isDocumentVisible
+  ])
 
   useEffect(() => {
     if (!compact) {
@@ -1181,7 +1212,9 @@ function App() {
           <div className="chat-header__title">
             <strong>{
               !selectedRoom.isGroup
-                ? (roomMemberProfiles.find((m) => m.id !== data.me?.id)?.name ?? selectedRoom.title)
+                ? (roomMemberProfiles.find((m) => m.id.toLowerCase() !== data.me?.id.toLowerCase())?.name 
+                   ?? selectedRoom.memberIds.find((id) => id.toLowerCase() !== data.me?.id.toLowerCase()) 
+                   ?? selectedRoom.title)
                 : selectedRoom.title
             }</strong>
             <span>
@@ -1537,7 +1570,9 @@ function RoomRow({
         <div className="room-row__top">
           <strong>{
             !room.isGroup
-              ? (members.find((m) => m.id !== meId)?.name ?? room.title)
+              ? (members.find((m) => m.id.toLowerCase() !== meId.toLowerCase())?.name 
+                 ?? room.memberIds.find((id) => id.toLowerCase() !== meId.toLowerCase()) 
+                 ?? room.title)
               : room.title
           }</strong>
           <span>{lastMessage ? formatClock(lastMessage.createdAt) : ''}</span>
