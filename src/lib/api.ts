@@ -148,8 +148,11 @@ export const api = {
     if (!target) throw new Error('ユーザーが見つかりません')
     if (target.id === userId) throw new Error('自分自身は追加できません')
 
-    // Friendship追加
-    await supabase.from('friendships').insert([{ user_id: userId, friend_id: target.id }])
+    // Friendship 追加（双方向）
+    await supabase.from('friendships').insert([
+      { user_id: userId, friend_id: target.id },
+      { user_id: target.id, friend_id: userId }
+    ])
     
     return {
       id: target.id, name: target.name, handle: target.id, avatarSeed: target.avatar_seed, status: target.status || '', avatarUrl: target.avatar_url, accent: '#00c300'
