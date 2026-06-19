@@ -962,7 +962,6 @@ function App() {
           <div className="brand__mark">Y</div>
           <div>
             <div className="brand__title">Y-Chat2</div>
-            <div className="brand__sub">{hasSupabaseConfig ? 'Supabase接続済み' : 'デモモード'}</div>
           </div>
         </div>
 
@@ -1156,15 +1155,7 @@ function App() {
               </label>
             </div>
 
-            <div className="settings-card">
-              <div className="settings-card__note">
-                <strong>接続状態</strong>
-                <p>{hasSupabaseConfig ? 'Supabase設定を検出しました。' : 'いまはデモデータで動いています。'}</p>
-              </div>
-              <button type="button" className="button" onClick={restoreDemo}>
-                デモを初期化
-              </button>
-            </div>
+
 
             <div className="settings-card">
               <button
