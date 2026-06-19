@@ -30,9 +30,6 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
   }, [onIncomingCall, onCallAccepted, onCallRejected, onCallEnded])
 
   useEffect(() => {
-    remoteAudioRef.current = new Audio()
-    remoteAudioRef.current.autoplay = true
-
     initSignaling(async (msg) => {
       const currentActiveRoom = activeCallRoomRef.current
       const { onIncomingCall, onCallAccepted, onCallRejected, onCallEnded } = callbacksRef.current
@@ -110,6 +107,9 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
       pc.ontrack = (event) => {
         if (remoteAudioRef.current && event.streams[0]) {
           remoteAudioRef.current.srcObject = event.streams[0]
+          remoteAudioRef.current.play().catch(err => {
+            console.warn('Audio play failed or blocked by autoplay policy:', err)
+          })
         }
       }
 
@@ -143,10 +143,16 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
   useEffect(() => {
     ;(window as any).CallApi = {
       startCall: (roomId: string) => {
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.play().catch(() => {})
+        }
         setActiveCallRoom(roomId)
         sendSignal({ type: 'call-request', callerId: myId, roomId })
       },
       acceptCall: (roomId: string) => {
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.play().catch(() => {})
+        }
         setActiveCallRoom(roomId)
         setCallStartTime(Date.now())
         sendSignal({ type: 'call-accept', responderId: myId, roomId })
@@ -163,5 +169,12 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
     }
   }, [myId, callStartTime])
 
-  return null
+  return (
+    <audio
+      ref={(el) => {
+        remoteAudioRef.current = el
+      }}
+      style={{ display: 'none' }}
+    />
+  )
 }
