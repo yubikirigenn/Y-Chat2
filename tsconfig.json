@@ -13,8 +13,7 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "allowImportingTsExtensions": false,
-    "types": ["vite/client"]
+    "allowImportingTsExtensions": false
   },
   "include": ["src"]
 }
