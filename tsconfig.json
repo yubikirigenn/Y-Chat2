@@ -14,7 +14,7 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "allowImportingTsExtensions": false,
-    "types": ["vite/client"]
+    "types": []
   },
   "include": ["src"]
 }

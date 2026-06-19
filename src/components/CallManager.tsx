@@ -108,7 +108,7 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
       stream.getTracks().forEach(track => pc.addTrack(track, stream))
 
       pc.ontrack = (event) => {
-        if (remoteAudioRef.current) {
+        if (remoteAudioRef.current && event.streams[0]) {
           remoteAudioRef.current.srcObject = event.streams[0]
         }
       }
