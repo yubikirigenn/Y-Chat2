@@ -23,9 +23,11 @@ import {
 import { hasSupabaseConfig } from './lib/supabase'
 import { demoData } from './mock'
 import { loadState, resetState, saveState, loadAccounts, saveAccounts, loadFriendships, saveFriendships } from './storage'
-import { api } from './lib/api'
-import { useSupabaseSync } from './lib/useSupabaseSync'
+import { RoomAvatar } from './components/RoomAvatar'
+import { WebRTCProvider } from './components/WebRTCProvider'
 import { CallManager } from './components/CallManager'
+import { useSupabaseSync } from './lib/useSupabaseSync'
+import { api } from './lib/api'
 import type { AppData, Message, Profile, Room, TabKey, Account, Friendship } from './types'
 
 
@@ -251,6 +253,9 @@ function App() {
   const [data, setData] = useState<AppData>(() => loadState())
   const [accounts, setAccounts] = useState<Account[]>(() => loadAccounts())
   const [friendships, setFriendships] = useState<Friendship[]>(() => loadFriendships())
+
+  // Supabaseのリアルタイム同期を開始
+  useSupabaseSync(data, setData, accounts, setAccounts, friendships, setFriendships)
 
   const [filterText, setFilterText] = useState('')
   const [composerText, setComposerText] = useState('')
