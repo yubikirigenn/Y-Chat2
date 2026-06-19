@@ -211,11 +211,12 @@ export const api = {
     if (unreadMsgs.length === 0) return
 
     // 並列でアップデートを実行
+    const client = supabase!
     await Promise.all(
       unreadMsgs.map(msg => {
         // 重複を防ぐため Set を使う
         const newReadBy = Array.from(new Set([...(msg.read_by || []), userId]))
-        return supabase.from('messages').update({ read_by: newReadBy }).eq('id', msg.id)
+        return client.from('messages').update({ read_by: newReadBy }).eq('id', msg.id)
       })
     )
   },
