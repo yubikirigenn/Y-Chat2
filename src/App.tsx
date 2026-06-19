@@ -23,11 +23,8 @@ import {
 import { hasSupabaseConfig } from './lib/supabase'
 import { demoData } from './mock'
 import { loadState, resetState, saveState, loadAccounts, saveAccounts, loadFriendships, saveFriendships } from './storage'
-import { RoomAvatar } from './components/RoomAvatar'
-import { WebRTCProvider } from './components/WebRTCProvider'
-import { CallManager } from './components/CallManager'
-import { useSupabaseSync } from './lib/useSupabaseSync'
 import { api } from './lib/api'
+import { useSupabaseSync } from './lib/useSupabaseSync'
 import type { AppData, Message, Profile, Room, TabKey, Account, Friendship } from './types'
 
 
