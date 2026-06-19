@@ -25,6 +25,7 @@ import { demoData } from './mock'
 import { loadState, resetState, saveState, loadAccounts, saveAccounts, loadFriendships, saveFriendships } from './storage'
 import { api } from './lib/api'
 import { useSupabaseSync } from './lib/useSupabaseSync'
+import { CallManager } from './components/CallManager'
 import type { AppData, Message, Profile, Room, TabKey, Account, Friendship } from './types'
 
 
@@ -1374,6 +1375,68 @@ function App() {
 
   return (
     <div className={`app-shell ${compact ? 'app-shell--compact' : ''}`}>
+      {data.me && (
+        <CallManager 
+          myId={data.me.id}
+          currentRoomId={callingRoomId}
+          onIncomingCall={(roomId, callerId) => setIncomingCall({roomId, callerId})}
+          onCallAccepted={(roomId) => {
+            setCallingRoomId(roomId)
+            setCallStatus('connected')
+            setCallDuration(0)
+          }}
+          onCallRejected={() => setCallingRoomId(null)}
+          onCallEnded={(roomId, duration) => {
+            setCallingRoomId(null)
+            if (duration > 0) {
+              const minutes = Math.floor(duration / 60)
+              const seconds = duration % 60
+              createMessage({
+                roomId,
+                senderId: '',
+                kind: 'system',
+                text: `通話が終了しました (${minutes}:${seconds.toString().padStart(2, '0')})`,
+                readBy: []
+              })
+            }
+          }}
+        />
+      )}
+
+      {incomingCall && (
+        <div className="modal" style={{ zIndex: 150 }}>
+          <button type="button" className="modal__backdrop" aria-label="close" onClick={rejectCall} />
+          <section className="modal__dialog" style={{ maxWidth: '320px', padding: '30px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+              <Avatar profile={profilesById.get(incomingCall.callerId) || { id: '', name: '不明', handle: '', avatarSeed: 'x', status: '', accent: '#ccc' }} size={80} />
+            </div>
+            <strong style={{ fontSize: '1.2rem', display: 'block', marginBottom: '8px' }}>
+              {profilesById.get(incomingCall.callerId)?.name || '不明'}からの着信
+            </strong>
+            <p style={{ color: 'var(--muted)', marginBottom: '30px' }}>音声通話</p>
+            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+              <button type="button" className="call-screen__hangup" onClick={rejectCall} style={{ width: 64, height: 64, border: 'none', cursor: 'pointer' }}>
+                <CallIcon className="icon" />
+              </button>
+              <button type="button" className="call-screen__hangup" onClick={acceptCall} style={{ width: 64, height: 64, background: 'var(--accent)', boxShadow: '0 10px 30px rgba(0, 195, 0, 0.4)', border: 'none', cursor: 'pointer' }}>
+                <CallIcon className="icon" />
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {callingRoomId && (
+        <CallScreen 
+          room={data.rooms.find(r => r.id === callingRoomId)!}
+          members={data.rooms.find(r => r.id === callingRoomId)?.memberIds
+            .map((id) => profilesById.get(id))
+            .filter((profile): profile is Profile => Boolean(profile)) ?? []}
+          meId={data.me!.id}
+          callStatus={callStatus}
+          onHangUp={handleHangUp}
+        />
+      )}
 
       {!compact && sidebarContent}
       {!compact && mainStage}
