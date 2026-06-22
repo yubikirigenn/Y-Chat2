@@ -38,7 +38,8 @@ export const sendSignal = async (message: SignalMessage) => {
 }
 
 export const cleanupSignaling = () => {
-  if (signalingChannel) {
-    signalingChannel.unsubscribe()
+  if (signalingChannel && supabase) {
+    supabase.removeChannel(signalingChannel)
+    signalingChannel = undefined
   }
 }

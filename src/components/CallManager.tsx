@@ -17,6 +17,12 @@ export function CallManager({ myId, rooms, currentRoomId, onIncomingCall, onCall
   const localStreamRef = useRef<MediaStream | null>(null)
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null)
   
+  // 最新の myId を常に保持する ref (古いクロージャのリーク対策)
+  const myIdRef = useRef<string>(myId)
+  useEffect(() => {
+    myIdRef.current = myId
+  }, [myId])
+
   const [activeCallRoom, setActiveCallRoom] = useState<string | null>(null)
   const [callStartTime, setCallStartTime] = useState<number | null>(null)
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([])
@@ -48,12 +54,12 @@ export function CallManager({ myId, rooms, currentRoomId, onIncomingCall, onCall
       const { onIncomingCall, onCallAccepted, onCallRejected, onCallEnded } = callbacksRef.current
 
       // 自分のメッセージは無視
-      if ('senderId' in msg && msg.senderId?.toLowerCase() === myId.toLowerCase()) return
-      if ('callerId' in msg && msg.callerId?.toLowerCase() === myId.toLowerCase()) return
-      if ('responderId' in msg && msg.responderId?.toLowerCase() === myId.toLowerCase()) return
+      if ('senderId' in msg && msg.senderId?.toLowerCase() === myIdRef.current.toLowerCase()) return
+      if ('callerId' in msg && msg.callerId?.toLowerCase() === myIdRef.current.toLowerCase()) return
+      if ('responderId' in msg && msg.responderId?.toLowerCase() === myIdRef.current.toLowerCase()) return
 
       // 自分が宛先に含まれていない場合は無視
-      if (!msg.targetUserIds || !msg.targetUserIds.map(id => (id || '').toLowerCase()).includes(myId.toLowerCase())) {
+      if (!myIdRef.current || !msg.targetUserIds || !msg.targetUserIds.map(id => (id || '').toLowerCase()).includes(myIdRef.current.toLowerCase())) {
         return
       }
 

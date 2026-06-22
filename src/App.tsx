@@ -35,7 +35,7 @@ type Attachment = {
   kind: 'image'
 }
 
-const APP_VERSION = '1.1.0'
+const APP_VERSION = '1.1.1'
 
 const bottomTabs: Array<{ key: TabKey; label: string; icon: typeof ChatDotsIcon }> = [
   { key: 'chats', label: 'トーク', icon: ChatDotsIcon },
