@@ -48,12 +48,12 @@ export function CallManager({ myId, rooms, currentRoomId, onIncomingCall, onCall
       const { onIncomingCall, onCallAccepted, onCallRejected, onCallEnded } = callbacksRef.current
 
       // 自分のメッセージは無視
-      if ('senderId' in msg && msg.senderId === myId) return
-      if ('callerId' in msg && msg.callerId === myId) return
-      if ('responderId' in msg && msg.responderId === myId) return
+      if ('senderId' in msg && msg.senderId?.toLowerCase() === myId.toLowerCase()) return
+      if ('callerId' in msg && msg.callerId?.toLowerCase() === myId.toLowerCase()) return
+      if ('responderId' in msg && msg.responderId?.toLowerCase() === myId.toLowerCase()) return
 
       // 自分が宛先に含まれていない場合は無視
-      if (!msg.targetUserIds || !msg.targetUserIds.map(id => id.toLowerCase()).includes(myId.toLowerCase())) {
+      if (!msg.targetUserIds || !msg.targetUserIds.map(id => (id || '').toLowerCase()).includes(myId.toLowerCase())) {
         return
       }
 

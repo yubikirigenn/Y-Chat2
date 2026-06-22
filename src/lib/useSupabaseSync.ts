@@ -90,6 +90,11 @@ export function useSupabaseSync(
 
         const memberIds = rmData.map((rm: any) => rm.user_id)
 
+        // 自分がこのルームのメンバーでない場合は無視する
+        if (!memberIds.map((id: string) => id.toLowerCase()).includes(currentUserId.toLowerCase())) {
+          return
+        }
+
         const { data: accData } = await supabase!
           .from('accounts')
           .select('*')
@@ -153,6 +158,9 @@ export function useSupabaseSync(
         const newMsg = payload.new as any
         
         setData(prev => {
+          // 自分が参加していないルームのメッセージは追加しない
+          if (!prev.rooms.some(r => r.id === newMsg.room_id)) return prev
+
           if (prev.messages.some(m => m.id === newMsg.id)) return prev
 
           const isFromMe = newMsg.sender_id?.toLowerCase() === currentUserId?.toLowerCase()
@@ -200,7 +208,7 @@ export function useSupabaseSync(
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_members' }, (payload) => {
         const newMember = payload.new as any
-        if (newMember.user_id === currentUserId) {
+        if (newMember.user_id?.toLowerCase() === currentUserId?.toLowerCase()) {
           syncRoom(newMember.room_id)
         }
       })
