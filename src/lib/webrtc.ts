@@ -1,13 +1,13 @@
 import { supabase } from './supabase'
 
 export type SignalMessage =
-  | { type: 'call-request'; callerId: string; roomId: string }
-  | { type: 'call-accept'; responderId: string; roomId: string }
-  | { type: 'call-reject'; responderId: string; roomId: string }
-  | { type: 'call-hangup'; senderId: string; roomId: string }
-  | { type: 'webrtc-offer'; senderId: string; roomId: string; sdp: RTCSessionDescriptionInit }
-  | { type: 'webrtc-answer'; senderId: string; roomId: string; sdp: RTCSessionDescriptionInit }
-  | { type: 'webrtc-ice'; senderId: string; roomId: string; candidate: RTCIceCandidateInit }
+  | { type: 'call-request'; callerId: string; roomId: string; targetUserIds: string[] }
+  | { type: 'call-accept'; responderId: string; roomId: string; targetUserIds: string[] }
+  | { type: 'call-reject'; responderId: string; roomId: string; targetUserIds: string[] }
+  | { type: 'call-hangup'; senderId: string; roomId: string; targetUserIds: string[] }
+  | { type: 'webrtc-offer'; senderId: string; roomId: string; sdp: RTCSessionDescriptionInit; targetUserIds: string[] }
+  | { type: 'webrtc-answer'; senderId: string; roomId: string; sdp: RTCSessionDescriptionInit; targetUserIds: string[] }
+  | { type: 'webrtc-ice'; senderId: string; roomId: string; candidate: RTCIceCandidateInit; targetUserIds: string[] }
 
 // 通話シグナリング用チャネル
 let signalingChannel = supabase?.channel('webrtc-signaling')

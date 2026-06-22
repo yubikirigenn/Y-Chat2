@@ -32,6 +32,11 @@ export function CallManager({ myId, rooms, currentRoomId, onIncomingCall, onCall
     roomsRef.current = rooms
   }, [rooms])
 
+  const getRoomMemberIds = (roomId: string): string[] => {
+    const room = roomsRef.current.find(r => r.id === roomId)
+    return room ? room.memberIds : []
+  }
+
   const callbacksRef = useRef({ onIncomingCall, onCallAccepted, onCallRejected, onCallEnded })
   useEffect(() => {
     callbacksRef.current = { onIncomingCall, onCallAccepted, onCallRejected, onCallEnded }
@@ -47,9 +52,8 @@ export function CallManager({ myId, rooms, currentRoomId, onIncomingCall, onCall
       if ('callerId' in msg && msg.callerId === myId) return
       if ('responderId' in msg && msg.responderId === myId) return
 
-      // 自分自身が対象ルームのメンバーでない場合は無視
-      const targetRoom = roomsRef.current.find(r => r.id === msg.roomId)
-      if (!targetRoom || !targetRoom.memberIds.map(id => id.toLowerCase()).includes(myId.toLowerCase())) {
+      // 自分が宛先に含まれていない場合は無視
+      if (!msg.targetUserIds || !msg.targetUserIds.map(id => id.toLowerCase()).includes(myId.toLowerCase())) {
         return
       }
 
@@ -92,7 +96,7 @@ export function CallManager({ myId, rooms, currentRoomId, onIncomingCall, onCall
             await processPendingCandidates()
             const answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)
-            sendSignal({ type: 'webrtc-answer', senderId: myId, roomId: msg.roomId, sdp: answer! })
+            sendSignal({ type: 'webrtc-answer', senderId: myId, roomId: msg.roomId, sdp: answer!, targetUserIds: getRoomMemberIds(msg.roomId) })
           } catch (err) {
             console.error('Error handling webrtc-offer:', err)
           }
@@ -177,14 +181,14 @@ export function CallManager({ myId, rooms, currentRoomId, onIncomingCall, onCall
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
-          sendSignal({ type: 'webrtc-ice', senderId: myId, roomId, candidate: event.candidate.toJSON() })
+          sendSignal({ type: 'webrtc-ice', senderId: myId, roomId, candidate: event.candidate.toJSON(), targetUserIds: getRoomMemberIds(roomId) })
         }
       }
 
       if (isCaller) {
         const offer = await pc.createOffer()
         await pc.setLocalDescription(offer)
-        sendSignal({ type: 'webrtc-offer', senderId: myId, roomId, sdp: offer })
+        sendSignal({ type: 'webrtc-offer', senderId: myId, roomId, sdp: offer, targetUserIds: getRoomMemberIds(roomId) })
       }
     } catch (err) {
       console.error('WebRTC Setup Error:', err)
@@ -210,7 +214,7 @@ export function CallManager({ myId, rooms, currentRoomId, onIncomingCall, onCall
           remoteAudioRef.current.play().catch(() => {})
         }
         setActiveCallRoom(roomId)
-        sendSignal({ type: 'call-request', callerId: myId, roomId })
+        sendSignal({ type: 'call-request', callerId: myId, roomId, targetUserIds: getRoomMemberIds(roomId) })
       },
       acceptCall: (roomId: string) => {
         if (remoteAudioRef.current) {
@@ -218,14 +222,14 @@ export function CallManager({ myId, rooms, currentRoomId, onIncomingCall, onCall
         }
         setActiveCallRoom(roomId)
         setCallStartTime(Date.now())
-        sendSignal({ type: 'call-accept', responderId: myId, roomId })
+        sendSignal({ type: 'call-accept', responderId: myId, roomId, targetUserIds: getRoomMemberIds(roomId) })
       },
       rejectCall: (roomId: string) => {
-        sendSignal({ type: 'call-reject', responderId: myId, roomId })
+        sendSignal({ type: 'call-reject', responderId: myId, roomId, targetUserIds: getRoomMemberIds(roomId) })
       },
       hangUp: (roomId: string) => {
         const duration = callStartTime ? Math.floor((Date.now() - callStartTime) / 1000) : 0
-        sendSignal({ type: 'call-hangup', senderId: myId, roomId })
+        sendSignal({ type: 'call-hangup', senderId: myId, roomId, targetUserIds: getRoomMemberIds(roomId) })
         endCall(roomId)
         return duration
       }
