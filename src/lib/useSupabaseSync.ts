@@ -48,6 +48,7 @@ export function useSupabaseSync(
           // これにより、Supabase側で削除されたデータがローカルに残る問題（ゴースト）を防ぐ
           return {
             ...prev,
+            me: initial.me ?? prev.me,
             rooms: initial.rooms,
             messages: initial.messages,
             friends: initial.friends

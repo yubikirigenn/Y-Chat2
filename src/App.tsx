@@ -346,6 +346,11 @@ function App() {
     [myRooms, data.selectedRoomId],
   )
 
+  const callingRoom = useMemo(
+    () => (callingRoomId ? data.rooms.find((r) => r.id === callingRoomId) ?? null : null),
+    [data.rooms, callingRoomId],
+  )
+
   const selectedRoomMessages = useMemo(() => {
     if (!selectedRoom) return []
     return data.messages
@@ -1369,6 +1374,7 @@ function App() {
       {data.me && (
         <CallManager 
           myId={data.me.id}
+          rooms={data.rooms}
           currentRoomId={callingRoomId}
           onIncomingCall={(roomId, callerId) => setIncomingCall({roomId, callerId})}
           onCallAccepted={(roomId) => {
@@ -1417,10 +1423,10 @@ function App() {
         </div>
       )}
 
-      {callingRoomId && (
+      {callingRoom && (
         <CallScreen 
-          room={data.rooms.find(r => r.id === callingRoomId)!}
-          members={data.rooms.find(r => r.id === callingRoomId)?.memberIds
+          room={callingRoom}
+          members={callingRoom.memberIds
             .map((id) => profilesById.get(id))
             .filter((profile): profile is Profile => Boolean(profile)) ?? []}
           meId={data.me!.id}

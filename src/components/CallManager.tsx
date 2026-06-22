@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { sendSignal, initSignaling, cleanupSignaling, SignalMessage } from '../lib/webrtc'
+import type { Room } from '../types'
 
 type CallManagerProps = {
   myId: string
+  rooms: Room[]
   currentRoomId: string | null
   onIncomingCall: (roomId: string, callerId: string) => void
   onCallAccepted: (roomId: string) => void
@@ -10,7 +12,7 @@ type CallManagerProps = {
   onCallEnded: (roomId: string, duration: number) => void
 }
 
-export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepted, onCallRejected, onCallEnded }: CallManagerProps) {
+export function CallManager({ myId, rooms, currentRoomId, onIncomingCall, onCallAccepted, onCallRejected, onCallEnded }: CallManagerProps) {
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -24,6 +26,11 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
   useEffect(() => {
     activeCallRoomRef.current = activeCallRoom
   }, [activeCallRoom])
+
+  const roomsRef = useRef<Room[]>(rooms)
+  useEffect(() => {
+    roomsRef.current = rooms
+  }, [rooms])
 
   const callbacksRef = useRef({ onIncomingCall, onCallAccepted, onCallRejected, onCallEnded })
   useEffect(() => {
@@ -39,6 +46,12 @@ export function CallManager({ myId, currentRoomId, onIncomingCall, onCallAccepte
       if ('senderId' in msg && msg.senderId === myId) return
       if ('callerId' in msg && msg.callerId === myId) return
       if ('responderId' in msg && msg.responderId === myId) return
+
+      // 自分自身が対象ルームのメンバーでない場合は無視
+      const targetRoom = roomsRef.current.find(r => r.id === msg.roomId)
+      if (!targetRoom || !targetRoom.memberIds.map(id => id.toLowerCase()).includes(myId.toLowerCase())) {
+        return
+      }
 
       if (msg.type === 'call-request') {
         onIncomingCall(msg.roomId, msg.callerId)

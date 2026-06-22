@@ -70,6 +70,18 @@ export const api = {
   async fetchInitialData(userId: string) {
     if (!supabase) throw new Error('Supabase is not configured')
     
+    // 自分自身のプロフィール取得
+    const { data: myAcc } = await supabase.from('accounts').select('*').eq('id', userId).maybeSingle()
+    const meProfile = myAcc ? {
+      id: myAcc.id,
+      name: myAcc.name,
+      handle: myAcc.id,
+      avatarSeed: myAcc.avatar_seed,
+      status: myAcc.status || '',
+      avatarUrl: myAcc.avatar_url,
+      accent: '#00c300',
+    } as Profile : null
+
     // 友達取得
     const { data: fData } = await supabase.from('friendships').select('friend_id').eq('user_id', userId)
     const friendIds = fData?.map((f: any) => f.friend_id) || []
@@ -138,7 +150,7 @@ export const api = {
       }))
     }
 
-    return { friends, rooms, messages }
+    return { me: meProfile, friends, rooms, messages }
   },
 
   async addFriend(userId: string, targetHandle: string) {
